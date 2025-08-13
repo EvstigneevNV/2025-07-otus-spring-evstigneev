@@ -24,25 +24,32 @@ public class CsvQuestionDao implements QuestionDao {
     @Override
     public List<Question> findAll() {
 
-        ColumnPositionMappingStrategy<QuestionDto> strategy = new ColumnPositionMappingStrategy<>();
-        strategy.setType(QuestionDto.class);
-
         InputStream is = getClass().getClassLoader().getResourceAsStream(fileNameProvider.getTestFileName());
         if (is == null) {
             throw new QuestionReadException("Resource not found: " + fileNameProvider.getTestFileName());
         }
-        try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-            CsvToBean<QuestionDto> csvToBean = new CsvToBeanBuilder<QuestionDto>(reader)
-                    .withMappingStrategy(strategy)
-                    .withSeparator(';')              // разделитель колонок в вашем файле
-                    .withSkipLines(1)
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .withIgnoreEmptyLine(true)
-                    .withThrowExceptions(false)      // собирать ошибки, а не кидать сразу
-                    .build();
+
+        try (var isCloseable = is; Reader reader = new InputStreamReader(isCloseable, StandardCharsets.UTF_8)) {
+            CsvToBean<QuestionDto> csvToBean = getCsvToBean(reader);
+            csvToBean.getCapturedExceptions().forEach(e -> {
+                throw new QuestionReadException(e.getMessage(), e);
+            });
             return csvToBean.parse().stream().map(QuestionDto::toDomainObject).collect(Collectors.toList());
         } catch (IOException e) {
-            throw new QuestionReadException("Error reading the file" ,e);
+            throw new QuestionReadException("Error reading the file", e);
         }
+    }
+
+    private CsvToBean<QuestionDto> getCsvToBean(Reader reader) {
+        ColumnPositionMappingStrategy<QuestionDto> strategy = new ColumnPositionMappingStrategy<>();
+        strategy.setType(QuestionDto.class);
+        return new CsvToBeanBuilder<QuestionDto>(reader)
+                .withMappingStrategy(strategy)
+                .withSeparator(';')
+                .withSkipLines(1)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withIgnoreEmptyLine(true)
+                .withThrowExceptions(false)
+                .build();
     }
 }

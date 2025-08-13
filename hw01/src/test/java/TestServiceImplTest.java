@@ -7,13 +7,17 @@ import org.mockito.MockitoAnnotations;
 import ru.otus.hw.dao.CsvQuestionDao;
 import ru.otus.hw.domain.Answer;
 import ru.otus.hw.domain.Question;
+import ru.otus.hw.exceptions.QuestionReadException;
 import ru.otus.hw.service.IOService;
 import ru.otus.hw.service.TestServiceImpl;
 
 import java.util.List;
 import java.util.Scanner;
 
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.when;
+
 
 class TestServiceImplTest {
 
@@ -42,7 +46,7 @@ class TestServiceImplTest {
     }
 
     @Test
-    void executeTest() {
+    void successfulCompletionTest() {
         Question q1 = new Question("Is there life on Mars?", List.of(
                 new Answer("Science doesn't know this yet", true),
                 new Answer("Certainly. The red UFO is from Mars. And green is from Venus", false),
@@ -100,4 +104,12 @@ class TestServiceImplTest {
 
         inOrder.verifyNoMoreInteractions();
     }
+
+    @Test
+    void errorExecutionTest() {
+        when(csvQuestionDao.findAll()).thenThrow(new QuestionReadException("Error reading the file"));
+
+        assertThrows(RuntimeException.class, () -> testServiceImpl.executeTest());
+    }
+
 }
