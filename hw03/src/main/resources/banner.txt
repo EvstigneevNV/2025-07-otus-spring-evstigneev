@@ -1,0 +1,13 @@
+${AnsiStyle.BOLD}${AnsiColor.BRIGHT_BLUE}
+            ██████   ████████  ██    ██   ██████
+           ██    ██     ██     ██    ██  ██
+           ██    ██     ██     ██    ██   ██████
+           ██    ██     ██     ██    ██        ██
+            ██████      ██      ██████    ██████  ${AnsiColor.DEFAULT}
+
+${AnsiColor.BRIGHT_MAGENTA}
+            ██   ██   ██     ██  ██████
+            ██   ██   ██     ██      ███
+            ███████   ██  █  ██  ██████
+            ██   ██   ██ ███ ██      ███
+            ██   ██    ███ ███   ██████    ${AnsiStyle.NORMAL}${AnsiColor.DEFAULT}
