@@ -256,10 +256,11 @@ public class JdbcBookRepository implements BookRepository {
                     rs.getLong("b_id"),
                     rs.getString("b_title"),
                     new Author(rs.getLong("a_id"), rs.getString("a_full_name")),
-                    List.of());
+                    null);
             List<Genre> genres = new ArrayList<>();
             do {
-                genres.add(new Genre(rs.getLong("g_id"), rs.getString("g_name")));
+                if(rs.getLong("g_id") != 0 && !rs.getString("g_name").isEmpty())
+                    genres.add(new Genre(rs.getLong("g_id"), rs.getString("g_name")));
             } while (rs.next());
             book.setGenres(genres);
             return book;

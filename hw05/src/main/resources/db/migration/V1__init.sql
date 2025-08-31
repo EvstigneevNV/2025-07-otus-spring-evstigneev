@@ -22,7 +22,28 @@ CREATE TABLE IF NOT EXISTS book_x_genre (
   CONSTRAINT fk_bxg_genre FOREIGN KEY (genre) REFERENCES genre(id),
   CONSTRAINT pk_bxg PRIMARY KEY (book, genre)
 );
+INSERT INTO author(full_name)
+VALUES ('Author_1'),
+       ('Author_2'),
+       ('Author_3');
 
-INSERT INTO author VALUES(1, 'author1');
-INSERT INTO genre VALUES(1, 'genre1');
-INSERT INTO genre VALUES(2, 'genre2');
+INSERT INTO genre(name)
+VALUES ('Genre_1'),
+       ('Genre_2'),
+       ('Genre_3'),
+       ('Genre_4'),
+       ('Genre_5'),
+       ('Genre_6');
+
+INSERT INTO book(title, author_id)
+VALUES ('BookTitle_1', 1),
+       ('BookTitle_2', 2),
+       ('BookTitle_3', 3);
+
+INSERT INTO book_x_genre(book, genre)
+VALUES (1, 1),
+       (1, 2),
+       (2, 3),
+       (2, 4),
+       (3, 5),
+       (3, 6);
