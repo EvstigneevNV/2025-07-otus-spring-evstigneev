@@ -27,11 +27,11 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 
-@SpringBootTest(classes = {TestServiceImpl.class})         // поднимем только нужный бин
-@Import(TestServiceImpl.class)                             // (избыточно, но на случай отсутствия сканирования)
+@SpringBootTest(classes = {TestServiceImpl.class})
+@Import(TestServiceImpl.class)
 @TestPropertySource(properties = {
-        "spring.main.banner-mode=off",                    // без баннера
-        "spring.main.web-application-type=none"          // без веб-контейнера
+        "spring.main.banner-mode=off",
+        "spring.main.web-application-type=none"
 })
 class TestServiceImplTest {
 
