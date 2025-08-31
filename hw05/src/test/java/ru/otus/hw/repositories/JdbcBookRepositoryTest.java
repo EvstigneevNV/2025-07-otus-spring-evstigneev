@@ -124,7 +124,6 @@ class JdbcBookRepositoryTest {
     @DisplayName("должен вернуть пустой список, если таблица пуста")
     @Test
     void shouldReturnEmptyListWhenNoBooks() {
-        // очистим связи и книги (в рамках транзакции теста — откатится)
         jdbc.update("DELETE FROM book_x_genre", Map.of());
         jdbc.update("DELETE FROM book", Map.of());
 
@@ -158,7 +157,6 @@ class JdbcBookRepositoryTest {
         var reloaded = repositoryJdbc.findById(saved.getId());
         assertThat(reloaded).isPresent();
 
-        // проверяем по id жанров — должно быть ровно два уникальных
         assertThat(reloaded.get().getGenres())
                 .extracting(Genre::getId)
                 .containsExactlyInAnyOrder(g1.getId(), g2.getId());
@@ -202,7 +200,6 @@ class JdbcBookRepositoryTest {
     @DisplayName("книга без связей жанров должна возвращаться с пустым списком жанров")
     @Test
     void shouldReadBookWithNoGenreRelationsAsEmptyList() {
-        // вставим книгу напрямую без записей в book_x_genre
         var kh = new GeneratedKeyHolder();
         jdbc.update(
                 "INSERT INTO book(title, author_id) VALUES(:title, :authorId)",
