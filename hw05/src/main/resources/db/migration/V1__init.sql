@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS book (
   CONSTRAINT fk_book_author FOREIGN KEY (author_id) REFERENCES author(id)
 );
 
-CREATE TABLE IF NOT EXISTS book_x_genre (
+CREATE TABLE IF NOT EXISTS books_genres (
   book  BIGINT NOT NULL,
   genre BIGINT NOT NULL,
   CONSTRAINT fk_bxg_book  FOREIGN KEY (book)  REFERENCES book(id),
@@ -40,7 +40,7 @@ VALUES ('BookTitle_1', 1),
        ('BookTitle_2', 2),
        ('BookTitle_3', 3);
 
-INSERT INTO book_x_genre(book, genre)
+INSERT INTO books_genres(book, genre)
 VALUES (1, 1),
        (1, 2),
        (2, 3),

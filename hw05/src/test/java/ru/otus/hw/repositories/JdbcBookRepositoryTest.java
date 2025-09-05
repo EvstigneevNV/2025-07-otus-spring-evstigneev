@@ -124,7 +124,7 @@ class JdbcBookRepositoryTest {
     @DisplayName("должен вернуть пустой список, если таблица пуста")
     @Test
     void shouldReturnEmptyListWhenNoBooks() {
-        jdbc.update("DELETE FROM book_x_genre", Map.of());
+        jdbc.update("DELETE FROM books_genres", Map.of());
         jdbc.update("DELETE FROM book", Map.of());
 
         assertThat(repositoryJdbc.findAll()).isEmpty();

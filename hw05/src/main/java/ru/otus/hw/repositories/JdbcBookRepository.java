@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
@@ -38,15 +39,15 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public Optional<Book> findById(long id) {
         String sql = """
-                SELECT b.id AS b_id,
-                       b.title AS b_title,
-                       a.id AS a_id,
-                       a.full_name AS a_full_name,
-                       g.id AS g_id,
-                       g.name AS g_name
+                SELECT b.id AS book_id,
+                       b.title AS book_title,
+                       a.id AS author_id,
+                       a.full_name AS author_full_name,
+                       g.id AS genre_id,
+                       g.name AS genre_name
                 FROM book b
                 LEFT JOIN author a ON a.id = b.author_id
-                LEFT JOIN book_x_genre bxg ON bxg.book = b.id
+                LEFT JOIN books_genres bxg ON bxg.book = b.id
                 LEFT JOIN genre g ON g.id = bxg.genre
                 WHERE b.id = :id
                 """;
@@ -77,7 +78,7 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public void deleteById(long id) {
         jdbc.update(
-                "DELETE FROM book_x_genre WHERE book = :id",
+                "DELETE FROM books_genres WHERE book = :id",
                 new MapSqlParameterSource("id", id)
         );
 
@@ -93,10 +94,10 @@ public class JdbcBookRepository implements BookRepository {
 
     private List<Book> getAllBooksWithoutGenres() {
         String sql = """
-                SELECT b.id AS b_id,
-                       b.title AS b_title,
-                       a.id AS a_id,
-                       a.full_name AS a_full_name
+                SELECT b.id AS book_id,
+                       b.title AS book_title,
+                       a.id AS author_id,
+                       a.full_name AS author_full_name
                 FROM book b
                 LEFT JOIN author a ON a.id = b.author_id
                 """;
@@ -109,9 +110,9 @@ public class JdbcBookRepository implements BookRepository {
 
     private List<BookGenreRelation> getAllGenreRelations() {
         String sql = """
-                SELECT bxg.book AS b_id,
-                       bxg.genre AS  g_id
-                FROM book_x_genre bxg
+                SELECT bxg.book AS book_id,
+                       bxg.genre AS  genre_id
+                FROM books_genres bxg
                 """;
         return jdbc.query(
                 sql,
@@ -128,16 +129,16 @@ public class JdbcBookRepository implements BookRepository {
 
         Map<Long, Book> bookById = booksWithoutGenres.stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Book::getId, b -> b, (a, b) -> a, LinkedHashMap::new));
+                .collect(Collectors.toMap(Book::getId, Function.identity()));
 
         Map<Long, Genre> genreById = genres.stream()
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Genre::getId, g -> g, (a, b) -> a, LinkedHashMap::new));
+                .collect(Collectors.toMap(Genre::getId, Function.identity()));
 
         Map<Long, LinkedHashSet<Genre>> genresByBook = new HashMap<>();
 
         for (BookGenreRelation rel : relations) {
-            if (rel == null) continue;
+
             Book book = bookById.get(rel.bookId());
             Genre genre = genreById.get(rel.genreId());
             if (book == null || genre == null) {
@@ -149,7 +150,6 @@ public class JdbcBookRepository implements BookRepository {
         }
 
         for (Book book : booksWithoutGenres) {
-            if (book == null) continue;
             LinkedHashSet<Genre> set = genresByBook.get(book.getId());
             book.setGenres(set == null ? new ArrayList<>() : new ArrayList<>(set));
         }
@@ -215,7 +215,7 @@ public class JdbcBookRepository implements BookRepository {
             return;
         }
 
-        final String sql = "INSERT INTO book_x_genre(book, genre) VALUES (:book, :genre)";
+        final String sql = "INSERT INTO books_genres(book, genre) VALUES (:book, :genre)";
 
         SqlParameterSource[] batch = genreIds.stream()
                 .map(gid -> new MapSqlParameterSource()
@@ -227,7 +227,7 @@ public class JdbcBookRepository implements BookRepository {
     }
 
     private void removeGenresRelationsFor(Book book) {
-        final String sql = "DELETE FROM book_x_genre WHERE book = :book";
+        final String sql = "DELETE FROM books_genres WHERE book = :book";
         jdbc.update(sql, new MapSqlParameterSource("book", book.getId()));
     }
 
@@ -236,14 +236,13 @@ public class JdbcBookRepository implements BookRepository {
         @Override
         public Book mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new Book(
-                    rs.getLong("b_id"),
-                    rs.getString("b_title"),
-                    new Author(rs.getLong("a_id"), rs.getString("a_full_name")),
+                    rs.getLong("book_id"),
+                    rs.getString("book_title"),
+                    new Author(rs.getLong("author_id"), rs.getString("author_full_name")),
                     List.of());
         }
     }
 
-    @SuppressWarnings("ClassCanBeRecord")
     @RequiredArgsConstructor
     private static class BookResultSetExtractor implements ResultSetExtractor<Book> {
 
@@ -253,14 +252,14 @@ public class JdbcBookRepository implements BookRepository {
                 return null;
             }
             var book = new Book(
-                    rs.getLong("b_id"),
-                    rs.getString("b_title"),
-                    new Author(rs.getLong("a_id"), rs.getString("a_full_name")),
+                    rs.getLong("book_id"),
+                    rs.getString("book_title"),
+                    new Author(rs.getLong("author_id"), rs.getString("author_full_name")),
                     null);
             List<Genre> genres = new ArrayList<>();
             do {
-                if(rs.getLong("g_id") != 0 && !rs.getString("g_name").isEmpty())
-                    genres.add(new Genre(rs.getLong("g_id"), rs.getString("g_name")));
+                if(rs.getLong("genre_id") != 0 && !rs.getString("genre_name").isEmpty())
+                    genres.add(new Genre(rs.getLong("genre_id"), rs.getString("genre_name")));
             } while (rs.next());
             book.setGenres(genres);
             return book;
@@ -275,8 +274,8 @@ public class JdbcBookRepository implements BookRepository {
         @Override
         public BookGenreRelation mapRow(ResultSet rs, int rowNum) throws SQLException {
             return new BookGenreRelation(
-                    rs.getLong("b_id"),
-                    rs.getLong("g_id"));
+                    rs.getLong("book_id"),
+                    rs.getLong("genre_id"));
         }
     }
 }
