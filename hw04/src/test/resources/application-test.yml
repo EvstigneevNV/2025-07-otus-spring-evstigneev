@@ -9,7 +9,6 @@ spring:
     interactive:
       enabled: false
   main:
-    allow-circular-references: true
     banner-mode: off
     web-application-type: none
 test:

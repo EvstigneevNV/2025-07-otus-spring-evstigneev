@@ -1,6 +1,7 @@
 package ru.otus.hw;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.otus.hw.config.TestFileNameProvider;
 import ru.otus.hw.dao.CsvQuestionDao;
@@ -20,7 +21,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(classes = { CsvQuestionDao.class }, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(classes = CsvQuestionDao.class)
+@ActiveProfiles("test")
 class CsvQuestionDaoIntegrationTest {
 
     @MockitoBean

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.otus.hw.dao.QuestionDao;
 import ru.otus.hw.domain.Answer;
@@ -16,7 +16,6 @@ import ru.otus.hw.domain.Student;
 import ru.otus.hw.domain.TestResult;
 import ru.otus.hw.exceptions.QuestionReadException;
 import ru.otus.hw.service.LocalizedIOService;
-import ru.otus.hw.service.TestService;
 import ru.otus.hw.service.TestServiceImpl;
 
 import java.util.List;
@@ -29,10 +28,7 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {TestServiceImpl.class})
 @Import(TestServiceImpl.class)
-@TestPropertySource(properties = {
-        "spring.main.banner-mode=off",
-        "spring.main.web-application-type=none"
-})
+@ActiveProfiles("test")
 class TestServiceImplTest {
 
     @MockitoBean
