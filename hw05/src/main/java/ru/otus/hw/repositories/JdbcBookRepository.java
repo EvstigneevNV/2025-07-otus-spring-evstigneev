@@ -19,12 +19,12 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -125,32 +125,23 @@ public class JdbcBookRepository implements BookRepository {
         if (booksWithoutGenres == null || genres == null || relations == null) {
             return;
         }
-
-
         Map<Long, Book> bookById = booksWithoutGenres.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Book::getId, Function.identity()));
-
-        Map<Long, Genre> genreById = genres.stream()
-                .filter(Objects::nonNull)
+                .filter(Objects::nonNull).collect(Collectors.toMap(Book::getId, Function.identity()));
+        Map<Long, Genre> genreById = genres.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(Genre::getId, Function.identity()));
-
-        Map<Long, LinkedHashSet<Genre>> genresByBook = new HashMap<>();
+        Map<Long, Set<Genre>> genresByBook = new HashMap<>();
 
         for (BookGenreRelation rel : relations) {
-
             Book book = bookById.get(rel.bookId());
             Genre genre = genreById.get(rel.genreId());
             if (book == null || genre == null) {
                 continue;
             }
-            genresByBook
-                    .computeIfAbsent(rel.bookId(), k -> new LinkedHashSet<>())
-                    .add(genre);
+            genresByBook.computeIfAbsent(rel.bookId(), k -> new LinkedHashSet<>()).add(genre);
         }
 
         for (Book book : booksWithoutGenres) {
-            LinkedHashSet<Genre> set = genresByBook.get(book.getId());
+            Set<Genre> set = genresByBook.get(book.getId());
             book.setGenres(set == null ? new ArrayList<>() : new ArrayList<>(set));
         }
     }
@@ -204,17 +195,10 @@ public class JdbcBookRepository implements BookRepository {
         if (genres == null || genres.isEmpty()) {
             return;
         }
-
-        List<Long> genreIds = genres.stream()
-                .filter(Objects::nonNull)
-                .map(Genre::getId)
-                .distinct()
-                .toList();
-
+        List<Long> genreIds = genres.stream().filter(Objects::nonNull).map(Genre::getId).distinct().toList();
         if (genreIds.isEmpty()) {
             return;
         }
-
         final String sql = "INSERT INTO books_genres(book, genre) VALUES (:book, :genre)";
 
         SqlParameterSource[] batch = genreIds.stream()
@@ -258,8 +242,9 @@ public class JdbcBookRepository implements BookRepository {
                     null);
             List<Genre> genres = new ArrayList<>();
             do {
-                if(rs.getLong("genre_id") != 0 && !rs.getString("genre_name").isEmpty())
+                if (rs.getLong("genre_id") != 0 && !rs.getString("genre_name").isEmpty()) {
                     genres.add(new Genre(rs.getLong("genre_id"), rs.getString("genre_name")));
+                }
             } while (rs.next());
             book.setGenres(genres);
             return book;
