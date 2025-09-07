@@ -18,3 +18,8 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  shell:
+    interactive:
+      enabled: false
+    script:
+      enabled: false
