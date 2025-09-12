@@ -25,7 +25,7 @@ class CommentsRepositoryTest {
     CommentsRepository commentsRepository;
 
     @Test
-    void findAllByBookId_returnsComments() {
+    void findAllByBookIdReturnsComments() {
         var author = testEntityManager.persist(new Author(null, "A"));
         var book = testEntityManager.persist(new Book(null, "T", author, null));
         testEntityManager.persist(new Comment(null, "c1", book));
