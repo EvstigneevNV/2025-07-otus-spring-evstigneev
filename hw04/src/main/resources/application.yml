@@ -1,0 +1,19 @@
+spring:
+  messages:
+    baseName: messages
+    encoding: UTF-8
+    fallbackToSystemLocale: false
+  shell:
+    interactive:
+      enabled: true
+  main:
+    allow-circular-references: true
+
+test:
+  rightAnswersCountToPass: 3
+  locale: ru-RU
+  fileNameByLocaleTag:
+    ru-RU: questions_ru.csv
+    en-US: questions.csv
+
+
