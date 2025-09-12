@@ -23,23 +23,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BookRepositoryTest {
 
     @Autowired
-    TestEntityManager em;
+    TestEntityManager testEntityManager;
     @Autowired
-    BookRepository repo;
+    BookRepository bookRepository;
 
     @Test
     void findAllFetchesAuthorAndGenres() {
-        var a = em.persist(new Author(null, "Author_1"));
-        var g1 = em.persist(new Genre(null,  "G1"));
-        var g2 = em.persist(new Genre(null,  "G2"));
+        var author = testEntityManager.persist(new Author(null, "Author_1"));
+        var genre1 = testEntityManager.persist(new Genre(null,  "G1"));
+        var genre2 = testEntityManager.persist(new Genre(null,  "G2"));
 
-        var b = new Book(null, "T1", a, new ArrayList<>(Set.of(g1, g2)), null);
-        em.persist(b);
+        var book = new Book(null, "T1", author, new ArrayList<>(Set.of(genre1, genre2)));
+        testEntityManager.persist(book);
 
-        em.flush();
-        em.clear();
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        var books = repo.findAll();
+        var books = bookRepository.findAll();
         assertThat(books).hasSize(1);
         var loaded = books.get(0);
 
@@ -49,32 +49,32 @@ class BookRepositoryTest {
 
     @Test
     void savePersistNewAndMergeExisting() {
-        var a = em.persist(new Author(null, "A"));
-        var b = new Book(null, "T", a, null, null);
+        var author = testEntityManager.persist(new Author(null, "A"));
+        var book = new Book(null, "T", author, null);
 
-        var saved = repo.save(b);
+        var saved = bookRepository.save(book);
         assertThat(saved.getId()).isNotNull();
 
         saved.setTitle("T2");
-        var merged = repo.save(saved);
-        em.flush();
-        em.clear();
+        var merged = bookRepository.save(saved);
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        var reloaded = em.find(Book.class, merged.getId());
+        var reloaded = testEntityManager.find(Book.class, merged.getId());
         assertThat(reloaded.getTitle()).isEqualTo("T2");
     }
 
     @Test
     void deleteByIdRemovesBook() {
-        var a = em.persist(new Author(null, "A"));
-        var b = em.persist(new Book(null, "T", a, null, null));
-        em.flush();
-        em.clear();
+        var author = testEntityManager.persist(new Author(null, "A"));
+        var book = testEntityManager.persist(new Book(null, "T", author, null));
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        repo.deleteById(b.getId());
-        em.flush();
-        em.clear();
+        bookRepository.deleteById(book.getId());
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        assertThat(em.find(Book.class, b.getId())).isNull();
+        assertThat(testEntityManager.find(Book.class, book.getId())).isNull();
     }
 }

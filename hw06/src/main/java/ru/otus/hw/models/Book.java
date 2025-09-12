@@ -58,6 +58,10 @@ public class Book {
     @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
     private List<Comment> comments;
 
+    public Book(Long id, String title, Author author, List<Genre> genres) {
+        this(id, title, author, genres, List.of());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {

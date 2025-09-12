@@ -20,35 +20,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CommentsRepositoryTest {
 
     @Autowired
-    TestEntityManager em;
+    TestEntityManager testEntityManager;
     @Autowired
-    CommentsRepository repo;
+    CommentsRepository commentsRepository;
 
     @Test
     void findAllByBookId_returnsComments() {
-        var a = em.persist(new Author(null, "A"));
-        var b = em.persist(new Book(null, "T", a, null, null));
-        em.persist(new Comment(null, "c1", b));
-        em.persist(new Comment(null, "c2", b));
-        em.flush();
-        em.clear();
+        var author = testEntityManager.persist(new Author(null, "A"));
+        var book = testEntityManager.persist(new Book(null, "T", author, null));
+        testEntityManager.persist(new Comment(null, "c1", book));
+        testEntityManager.persist(new Comment(null, "c2", book));
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        var list = repo.findAllByBookId(b.getId());
+        var list = commentsRepository.findAllByBookId(book.getId());
         assertThat(list).extracting(Comment::getText).containsExactlyInAnyOrder("c1","c2");
     }
 
     @Test
-    void save_and_delete() {
-        var a = em.persist(new Author(null, "A"));
-        var b = em.persist(new Book(null, "T", a, null, null));
-        var c = repo.save(new Comment(null, "c", b));
+    void saveAndDelete() {
+        var author = testEntityManager.persist(new Author(null, "A"));
+        var book = testEntityManager.persist(new Book(null, "T", author, null));
+        var comment = commentsRepository.save(new Comment(null, "c", book));
 
-        assertThat(c.getId()).isNotNull();
+        assertThat(comment.getId()).isNotNull();
 
-        repo.deleteById(c.getId());
-        em.flush();
-        em.clear();
+        commentsRepository.deleteById(comment.getId());
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        assertThat(em.find(Comment.class, c.getId())).isNull();
+        assertThat(testEntityManager.find(Comment.class, comment.getId())).isNull();
     }
 }

@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 @ActiveProfiles("test")
 class CommentServiceIntegrationTest {
 
-    @Autowired EntityManager em;
+    @Autowired EntityManager entityManager;
     @Autowired
     CommentService commentService;
 
@@ -35,24 +35,24 @@ class CommentServiceIntegrationTest {
     @BeforeEach
     @Transactional
     void setUp() {
-        var a = new Author(null, "Author_1");
-        var g1 = new Genre(null, "Genre_1");
-        var g2 = new Genre(null, "Genre_2");
-        var b = new Book(null, "Book_1", a, List.of(g1, g2), null);
-        var c1 = new Comment(null, "c1", b);
-        var c2 = new Comment(null, "c2", b);
-        b.setComments(List.of(c1, c2));
+        var author = new Author(null, "Author_1");
+        var genre1 = new Genre(null, "Genre_1");
+        var genre2 = new Genre(null, "Genre_2");
+        var book = new Book(null, "Book_1", author, List.of(genre1, genre2));
+        var comment1 = new Comment(null, "c1", book);
+        var comment2 = new Comment(null, "c2", book);
+        book.setComments(List.of(comment1, comment2));
 
 
-        em.persist(a);
-        em.persist(g1);
-        em.persist(g2);
-        em.persist(b);
-        em.persist(c1);
-        em.persist(c2);
+        entityManager.persist(author);
+        entityManager.persist(genre1);
+        entityManager.persist(genre2);
+        entityManager.persist(book);
+        entityManager.persist(comment1);
+        entityManager.persist(comment2);
 
-        bookId = b.getId();
-        commentId = c1.getId();
+        bookId = book.getId();
+        commentId = comment1.getId();
     }
 
     @Test

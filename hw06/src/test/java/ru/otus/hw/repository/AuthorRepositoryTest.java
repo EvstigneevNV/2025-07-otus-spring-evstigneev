@@ -21,19 +21,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthorRepositoryTest {
 
     @Autowired
-    TestEntityManager em;
+    TestEntityManager testEntityManager;
     @Autowired
-    AuthorRepository repo;
+    AuthorRepository authorRepository;
 
     @Test
     @Transactional
     void findAllReturnsPersistedAuthors() {
-        var a1 = em.persist(new Author(null, "A1"));
-        var a2 = em.persist(new Author(null, "A2"));
-        em.flush();
-        em.clear();
+        var author1 = testEntityManager.persist(new Author(null, "A1"));
+        var author2 = testEntityManager.persist(new Author(null, "A2"));
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        List<Author> all = repo.findAll();
+        List<Author> all = authorRepository.findAll();
 
         assertThat(all).extracting(Author::getFullName).containsExactlyInAnyOrder("A1", "A2");
     }
@@ -41,10 +41,11 @@ class AuthorRepositoryTest {
     @Test
     @Transactional
     void findByIdReturnsAuthor() {
-        var a = em.persist(new Author(null, "A"));
-        em.flush(); em.clear();
+        var a = testEntityManager.persist(new Author(null, "A"));
+        testEntityManager.flush();
+        testEntityManager.clear();
 
-        assertThat(repo.findById(a.getId())).isPresent()
+        assertThat(authorRepository.findById(a.getId())).isPresent()
                 .get().extracting(Author::getFullName).isEqualTo("A");
     }
 }
