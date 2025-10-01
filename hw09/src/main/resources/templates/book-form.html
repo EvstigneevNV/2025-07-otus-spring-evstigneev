@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Новая книга</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{_nav :: body}"></div>
+
+<main class="container">
+    <h1>Добавить книгу</h1>
+
+    <section class="card">
+        <form th:action="@{/book}" method="post" class="form-grid">
+            <label>Название
+                <input name="title" required>
+            </label>
+
+            <label>Автор
+                <select name="authorId" required>
+                    <option value="" disabled selected>— выберите автора —</option>
+                    <option th:each="a : ${authors}" th:value="${a.id}" th:text="${a.fullName}"></option>
+                </select>
+            </label>
+
+            <label>Жанры
+                <select name="genreIds" multiple size="6" required>
+                    <option th:each="g : ${genres}" th:value="${g.id}" th:text="${g.name}"></option>
+                </select>
+            </label>
+
+            <div class="actions">
+                <button class="btn primary" type="submit">Создать</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
