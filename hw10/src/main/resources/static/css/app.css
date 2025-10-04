@@ -1,0 +1,141 @@
+:root {
+    --bg: #0f172a;
+    --card: #111827;
+    --muted: #94a3b8;
+    --text: #e5e7eb;
+    --primary: #3b82f6;
+    --danger: #ef4444;
+    --border: #1f2937
+}
+
+* {
+    box-sizing: border-box
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, Segoe UI, Roboto, Arial
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none
+}
+
+.container {
+    max-width: 980px;
+    margin: 32px auto;
+    padding: 0 16px
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    padding: 12px 16px;
+    background: #0b1220;
+    border-bottom: 1px solid var(--border)
+}
+
+.topbar .brand {
+    font-weight: 700
+}
+
+.topbar nav a {
+    margin-right: 16px;
+    color: var(--text);
+    opacity: .9
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden
+}
+
+.table th, .table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border)
+}
+
+.table th {
+    color: var(--muted);
+    text-align: left;
+    background: #0b1220
+}
+
+.table tr:hover td {
+    background: #0f1a2c
+}
+
+input, select, button {
+    font: inherit
+}
+
+input, select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #0b1220;
+    color: var(--text)
+}
+
+select[multiple] {
+    height: 180px
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    align-items: center
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns:1fr 1fr;
+    gap: 12px
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #0b1220;
+    color: var(--text);
+    cursor: pointer
+}
+
+.btn.primary {
+    background: linear-gradient(180deg, #2563eb, #1d4ed8);
+    border-color: #1e40af
+}
+
+.btn.danger {
+    background: linear-gradient(180deg, #ef4444, #dc2626);
+    border-color: #b91c1c
+}
+
+.msg {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: #0b1220;
+    border-radius: 8px;
+    display: inline-block
+}
