@@ -7,10 +7,11 @@ import org.springframework.shell.command.annotation.CommandScan;
 
 @SpringBootApplication
 @CommandScan
-public class Application {
+public class HomeWork08Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		SpringApplication.run(HomeWork08Application.class, args);
 	}
+
 
 }

@@ -10,10 +10,10 @@ import ru.otus.hw.service.TestRunnerService;
 @ComponentScan
 @ComponentScan
 @PropertySource("classpath:application.properties")
-public class Application {
+public class HomeWork02Application {
     public static void main(String[] args) {
 
-        ApplicationContext context = new AnnotationConfigApplicationContext(Application.class);
+        ApplicationContext context = new AnnotationConfigApplicationContext(HomeWork02Application.class);
         var testRunnerService = context.getBean(TestRunnerService.class);
         testRunnerService.run();
 
