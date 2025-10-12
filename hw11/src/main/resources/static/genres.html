@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Жанры</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <script defer src="/js/api.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const genres = await jget(api.genres);
+                qs('tbody').innerHTML = genres.map(g => `<tr><td>${g.id}</td><td>${g.name}</td></tr>`).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    </script>
+</head>
+<body>
+<div id="nav"></div>
+<main class="container">
+    <h1>Жанры</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</main>
+<script>fetch('/nav.html').then(r => r.text()).then(h => {
+    document.getElementById('nav').outerHTML = h
+});</script>
+</body>
+</html>

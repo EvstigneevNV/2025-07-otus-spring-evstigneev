@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: app
+  data:
+    mongodb:
+      uri: mongodb://root:rootpass@localhost:27017/appdb?authSource=admin
+      auto-index-creation: true
+      database: appdb
+
+logging:
+  level:
+    org.springframework.jdbc.core: info
