@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Книга</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <script defer src="/js/api.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const id = new URLSearchParams(location.search).get('id');
+            const msgBox = '<p class="msg" style="display:none"></p>';
+            qs('main').insertAdjacentHTML('afterbegin', msgBox);
+
+            async function load() {
+                const [book, authors, genres] = await Promise.all([jget(api.book(id)), jget(api.authors), jget(api.genres)]);
+
+                byId('title-h1').textContent = book.title;
+
+                byId('book-id').textContent = book.id;
+                byId('book-author').textContent = book.author?.fullName ?? '';
+                byId('book-genres').textContent = (book.genres || []).map(g => g.name).join(', ');
+
+                byId('f-title').value = book.title;
+                const selA = byId('f-author');
+                selA.innerHTML = authors.map(a => `<option value="${a.id}">${a.fullName}</option>`).join('');
+                selA.value = book.author?.id ?? '';
+                const selG = byId('f-genres');
+                selG.innerHTML = genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+                const selectedIds = new Set((book.genres || []).map(g => String(g.id)));
+                [...selG.options].forEach(o => o.selected = selectedIds.has(o.value));
+
+                const tbody = byId('comments-body');
+                tbody.innerHTML = (book.comments || []).map(c => `
+      <tr>
+        <td>${c.id}</td>
+        <td>
+          <div class="row">
+            <input value="${c.text}" data-cid="${c.id}" class="c-edit">
+            <button class="btn" data-act="save" data-id="${c.id}">Изменить</button>
+            <button class="btn danger" data-act="del" data-id="${c.id}">Удалить</button>
+          </div>
+        </td>
+      </tr>`).join('');
+            }
+
+            byId('form-update').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = byId('f-title').value.trim();
+                const authorId = byId('f-author').value;
+                const genreIds = [...byId('f-genres').selectedOptions].map(o => o.value);
+                try {
+                    await jput(api.book(id), {title, authorId, genreIds});
+                    await load();
+                    msg('Книга обновлена');
+                } catch (e) {
+                    msg('Ошибка обновления');
+                    console.error(e);
+                }
+            });
+
+            byId('btn-del-book').addEventListener('click', async () => {
+                if (!confirm('Удалить книгу?')) return;
+                try {
+                    await jdel(api.book(id));
+                    location.href = '/index.html';
+                } catch (e) {
+                    msg('Ошибка удаления');
+                    console.error(e);
+                }
+            });
+
+            byId('form-comment').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = byId('c-text').value.trim();
+                if (!text) return;
+                try {
+                    await jpost(api.comments(id), {text});
+                    byId('c-text').value = '';
+                    await load();
+                    msg('Комментарий добавлен');
+                } catch (e) {
+                    msg('Ошибка добавления');
+                    console.error(e);
+                }
+            });
+
+            byId('comments-body').addEventListener('click', async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const cid = btn.dataset.id;
+                if (btn.dataset.act === 'save') {
+                    const input = qs(`input.c-edit[data-cid="${cid}"]`);
+                    try {
+                        await jput(api.comment(id, cid), {text: input.value});
+                        await load();
+                        msg('Комментарий обновлён');
+                    } catch (e) {
+                        msg('Ошибка изменения');
+                        console.error(e);
+                    }
+                } else if (btn.dataset.act === 'del') {
+                    if (!confirm('Удалить комментарий?')) return;
+                    try {
+                        await jdel(api.comment(id, cid));
+                        await load();
+                        msg('Комментарий удалён');
+                    } catch (e) {
+                        msg('Ошибка удаления');
+                        console.error(e);
+                    }
+                }
+            });
+
+            try {
+                await load();
+            } catch (e) {
+                msg('Ошибка загрузки');
+                console.error(e);
+            }
+        });
+    </script>
+</head>
+<body>
+<div id="nav"></div>
+<main class="container">
+    <h1 id="title-h1">Книга</h1>
+    <section class="card">
+        <p><b>ID:</b> <span id="book-id"></span></p>
+        <p><b>Автор:</b> <span id="book-author"></span></p>
+        <p><b>Жанры:</b> <span id="book-genres"></span></p>
+    </section>
+
+    <section class="card">
+        <h2>Изменить книгу</h2>
+        <form id="form-update" class="form-grid">
+            <label>Название <input id="f-title" required></label>
+            <label>Автор <select id="f-author" required></select></label>
+            <label>Жанры <select id="f-genres" multiple size="6" required></select></label>
+            <div class="row">
+                <button class="btn primary" type="submit">Сохранить</button>
+                <button class="btn danger" id="btn-del-book" type="button">Удалить книгу</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Комментарии</h2>
+        <form id="form-comment" class="row">
+            <input id="c-text" placeholder="Новый комментарий" required>
+            <button class="btn" type="submit">Добавить</button>
+        </form>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Текст</th>
+            </tr>
+            </thead>
+            <tbody id="comments-body"></tbody>
+        </table>
+    </section>
+</main>
+<script>fetch('/nav.html').then(r => r.text()).then(h => {
+    document.getElementById('nav').outerHTML = h
+});</script>
+</body>
+</html>

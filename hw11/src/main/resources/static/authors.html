@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Авторы</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <script defer src="/js/api.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const authors = await jget(api.authors);
+                qs('tbody').innerHTML = authors.map(a => `<tr><td>${a.id}</td><td>${a.fullName}</td></tr>`).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    </script>
+</head>
+<body>
+<div id="nav"></div>
+<main class="container">
+    <h1>Авторы</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>ФИО</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</main>
+<script>fetch('/nav.html').then(r => r.text()).then(h => {
+    document.getElementById('nav').outerHTML = h
+});</script>
+</body>
+</html>
