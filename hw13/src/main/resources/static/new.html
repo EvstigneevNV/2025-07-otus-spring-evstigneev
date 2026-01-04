@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Новая книга</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <script defer src="/js/api.js"></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', async () => {
+            qs('main').insertAdjacentHTML('afterbegin', '<p class="msg" style="display:none"></p>');
+            try {
+                const [authors, genres] = await Promise.all([jget(api.authors), jget(api.genres)]);
+                byId('author').innerHTML = authors.map(a => `<option value="${a.id}">${a.fullName}</option>`).join('');
+                byId('genres').innerHTML = genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            } catch (e) {
+                msg('Ошибка загрузки справочников');
+                console.error(e);
+            }
+
+            byId('form-create').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = byId('title').value.trim();
+                const authorId = Number(byId('author').value);
+                const genreIds = [...byId('genres').selectedOptions].map(o => Number(o.value));
+                try {
+                    const created = await jpost(api.books, {title, authorId, genreIds});
+                    location.href = `/book.html?id=${created.id}`;
+                } catch (e) {
+                    msg('Ошибка создания книги');
+                    console.error(e);
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+<div id="nav"></div>
+<main class="container">
+    <h1>Добавить книгу</h1>
+    <section class="card">
+        <form id="form-create" class="form-grid">
+            <label>Название <input id="title" required></label>
+            <label>Автор <select id="author" required></select></label>
+            <label>Жанры <select id="genres" multiple size="6" required></select></label>
+            <div>
+                <button class="btn primary" type="submit">Создать</button>
+            </div>
+        </form>
+    </section>
+</main>
+<script>fetch('/nav.html').then(r => r.text()).then(h => {
+    document.getElementById('nav').outerHTML = h
+});</script>
+</body>
+</html>
