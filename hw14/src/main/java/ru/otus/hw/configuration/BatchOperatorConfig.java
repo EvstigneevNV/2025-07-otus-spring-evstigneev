@@ -21,9 +21,9 @@ public class BatchOperatorConfig {
 
     @Bean
     public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry) {
-        var p = new JobRegistryBeanPostProcessor();
-        p.setJobRegistry(jobRegistry);
-        return p;
+        var processor = new JobRegistryBeanPostProcessor();
+        processor.setJobRegistry(jobRegistry);
+        return processor;
     }
 
     @Bean
@@ -33,12 +33,12 @@ public class BatchOperatorConfig {
             JobLauncher jobLauncher,
             JobRegistry jobRegistry
     ) throws Exception {
-        var f = new JobOperatorFactoryBean();
-        f.setJobExplorer(jobExplorer);
-        f.setJobRepository(jobRepository);
-        f.setJobLauncher(jobLauncher);
-        f.setJobRegistry(jobRegistry);
-        f.afterPropertiesSet();
-        return f.getObject();
+        var factoryBean = new JobOperatorFactoryBean();
+        factoryBean.setJobExplorer(jobExplorer);
+        factoryBean.setJobRepository(jobRepository);
+        factoryBean.setJobLauncher(jobLauncher);
+        factoryBean.setJobRegistry(jobRegistry);
+        factoryBean.afterPropertiesSet();
+        return factoryBean.getObject();
     }
 }
