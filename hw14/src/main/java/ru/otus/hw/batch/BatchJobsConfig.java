@@ -14,10 +14,8 @@ import org.springframework.batch.item.data.MongoItemWriter;
 import org.springframework.batch.item.data.MongoPagingItemReader;
 import org.springframework.batch.item.data.builder.MongoItemWriterBuilder;
 import org.springframework.batch.item.data.builder.MongoPagingItemReaderBuilder;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JpaPagingItemReader;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
-import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +23,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
-import ru.otus.hw.batch.dto.AuthorRow;
-import ru.otus.hw.batch.dto.BookRow;
-import ru.otus.hw.batch.dto.CommentRow;
-import ru.otus.hw.batch.dto.GenreRow;
+import org.bson.types.ObjectId;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import ru.otus.hw.batch.mapping.EntityType;
+import ru.otus.hw.batch.mapping.IdMappingService;
 import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Comment;
@@ -38,7 +37,6 @@ import ru.otus.hw.mongo.BookDoc;
 import ru.otus.hw.mongo.CommentDoc;
 import ru.otus.hw.mongo.GenreDoc;
 
-import javax.sql.DataSource;
 import java.util.Collections;
 import java.util.List;
  
@@ -65,9 +63,11 @@ public class BatchJobsConfig {
     @Bean
     public Step cleanMongoStep(JobRepository jobRepository,
                                PlatformTransactionManager transactionManager,
-                               MongoTemplate mongoTemplate) {
+                               MongoTemplate mongoTemplate,
+                               IdMappingService idMappingService) {
         return new StepBuilder("cleanMongoStep", jobRepository)
                 .tasklet((contribution, chunkContext) -> {
+                    idMappingService.clearAll();
                     dropIfExists(mongoTemplate, "comments");
                     dropIfExists(mongoTemplate, "books");
                     dropIfExists(mongoTemplate, "genres");
@@ -95,8 +95,12 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<Author, AuthorDoc> authorToDocProcessor() {
-        return a -> new AuthorDoc(String.valueOf(a.getId()), a.getFullName());
+    public ItemProcessor<Author, AuthorDoc> authorToDocProcessor(IdMappingService idMappingService) {
+        return a -> {
+            String mongoId = new ObjectId().toHexString();
+            idMappingService.save(EntityType.AUTHOR, a.getId(), mongoId);
+            return new AuthorDoc(mongoId, a.getFullName());
+        };
     }
 
     @Bean
@@ -133,8 +137,12 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<Genre, GenreDoc> genreToDocProcessor() {
-        return g -> new GenreDoc(String.valueOf(g.getId()), g.getName());
+    public ItemProcessor<Genre, GenreDoc> genreToDocProcessor(IdMappingService idMappingService) {
+        return g -> {
+            String mongoId = new ObjectId().toHexString();
+            idMappingService.save(EntityType.GENRE, g.getId(), mongoId);
+            return new GenreDoc(mongoId, g.getName());
+        };
     }
 
     @Bean
@@ -171,13 +179,21 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<Book, BookDoc> bookToDocProcessor() {
+    public ItemProcessor<Book, BookDoc> bookToDocProcessor(IdMappingService idMappingService) {
         return b -> {
-            String authorId = b.getAuthor() == null ? null : String.valueOf(b.getAuthor().getId());
+            String mongoId = new ObjectId().toHexString();
+            idMappingService.save(EntityType.BOOK, b.getId(), mongoId);
+
+            String authorId = b.getAuthor() == null ? null
+                    : idMappingService.requireMongoId(EntityType.AUTHOR, b.getAuthor().getId());
+
             List<String> genreIds = b.getGenres() == null
                     ? List.of()
-                    : b.getGenres().stream().map(g -> String.valueOf(g.getId())).toList();
-            return new BookDoc(String.valueOf(b.getId()), b.getTitle(), authorId, genreIds);
+                    : b.getGenres().stream()
+                        .map(g -> idMappingService.requireMongoId(EntityType.GENRE, g.getId()))
+                        .toList();
+
+            return new BookDoc(mongoId, b.getTitle(), authorId, genreIds);
         };
     }
 
@@ -215,12 +231,16 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<Comment, CommentDoc> commentToDocProcessor() {
-        return c -> new CommentDoc(
-                String.valueOf(c.getId()),
-                c.getText(),
-                c.getBook() == null ? null : String.valueOf(c.getBook().getId())
-        );
+    public ItemProcessor<Comment, CommentDoc> commentToDocProcessor(IdMappingService idMappingService) {
+        return c -> {
+            String mongoId = new ObjectId().toHexString();
+            idMappingService.save(EntityType.COMMENT, c.getId(), mongoId);
+
+            String bookId = c.getBook() == null ? null
+                    : idMappingService.requireMongoId(EntityType.BOOK, c.getBook().getId());
+
+            return new CommentDoc(mongoId, c.getText(), bookId);
+        };
     }
 
     @Bean
@@ -271,6 +291,7 @@ public class BatchJobsConfig {
                     jdbcTemplate.update("delete from book");
                     jdbcTemplate.update("delete from genre");
                     jdbcTemplate.update("delete from author");
+                    jdbcTemplate.update("delete from id_mapping");
                     return RepeatStatus.FINISHED;
                 }, transactionManager)
                 .build();
@@ -290,30 +311,33 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<AuthorDoc, AuthorRow> docToAuthorRowProcessor() {
-        return d -> new AuthorRow(Long.valueOf(d.getId()), d.getFullName());
-    }
-
-    @Bean
-    public JdbcBatchItemWriter<AuthorRow> authorRowWriter(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<AuthorRow>()
-                .dataSource(dataSource)
-                .sql("insert into author(id, full_name) values (:id, :fullName)")
-                .beanMapped()
-                .build();
+    public ItemWriter<AuthorDoc> mongoAuthorWriterToJpa(JdbcTemplate jdbcTemplate, IdMappingService idMappingService) {
+        return items -> {
+            for (AuthorDoc doc : items) {
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(con -> {
+                    var ps = con.prepareStatement("insert into author(full_name) values (?)", new String[]{"id"});
+                    ps.setString(1, doc.getFullName());
+                    return ps;
+                }, keyHolder);
+                Number key = keyHolder.getKey();
+                if (key == null) {
+                    throw new IllegalStateException("Failed to insert author for mongoId=" + doc.getId());
+                }
+                idMappingService.save(EntityType.AUTHOR, key.longValue(), doc.getId());
+            }
+        };
     }
 
     @Bean
     public Step mongoToJpaAuthorsStep(JobRepository jobRepository,
                                       PlatformTransactionManager transactionManager,
                                       MongoPagingItemReader<AuthorDoc> mongoAuthorReader,
-                                      ItemProcessor<AuthorDoc, AuthorRow> docToAuthorRowProcessor,
-                                      JdbcBatchItemWriter<AuthorRow> authorRowWriter) {
+                                      ItemWriter<AuthorDoc> mongoAuthorWriterToJpa) {
         return new StepBuilder("mongoToJpaAuthorsStep", jobRepository)
-                .<AuthorDoc, AuthorRow>chunk(CHUNK_SIZE, transactionManager)
+                .<AuthorDoc, AuthorDoc>chunk(CHUNK_SIZE, transactionManager)
                 .reader(mongoAuthorReader)
-                .processor(docToAuthorRowProcessor)
-                .writer(authorRowWriter)
+                .writer(mongoAuthorWriterToJpa)
                 .build();
     }
 
@@ -331,30 +355,33 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<GenreDoc, GenreRow> docToGenreRowProcessor() {
-        return d -> new GenreRow(Long.valueOf(d.getId()), d.getName());
-    }
-
-    @Bean
-    public JdbcBatchItemWriter<GenreRow> genreRowWriter(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<GenreRow>()
-                .dataSource(dataSource)
-                .sql("insert into genre(id, name) values (:id, :name)")
-                .beanMapped()
-                .build();
+    public ItemWriter<GenreDoc> mongoGenreWriterToJpa(JdbcTemplate jdbcTemplate, IdMappingService idMappingService) {
+        return items -> {
+            for (GenreDoc doc : items) {
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(con -> {
+                    var ps = con.prepareStatement("insert into genre(name) values (?)", new String[]{"id"});
+                    ps.setString(1, doc.getName());
+                    return ps;
+                }, keyHolder);
+                Number key = keyHolder.getKey();
+                if (key == null) {
+                    throw new IllegalStateException("Failed to insert genre for mongoId=" + doc.getId());
+                }
+                idMappingService.save(EntityType.GENRE, key.longValue(), doc.getId());
+            }
+        };
     }
 
     @Bean
     public Step mongoToJpaGenresStep(JobRepository jobRepository,
                                      PlatformTransactionManager transactionManager,
                                      MongoPagingItemReader<GenreDoc> mongoGenreReader,
-                                     ItemProcessor<GenreDoc, GenreRow> docToGenreRowProcessor,
-                                     JdbcBatchItemWriter<GenreRow> genreRowWriter) {
+                                     ItemWriter<GenreDoc> mongoGenreWriterToJpa) {
         return new StepBuilder("mongoToJpaGenresStep", jobRepository)
-                .<GenreDoc, GenreRow>chunk(CHUNK_SIZE, transactionManager)
+                .<GenreDoc, GenreDoc>chunk(CHUNK_SIZE, transactionManager)
                 .reader(mongoGenreReader)
-                .processor(docToGenreRowProcessor)
-                .writer(genreRowWriter)
+                .writer(mongoGenreWriterToJpa)
                 .build();
     }
 
@@ -372,47 +399,58 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<BookDoc, BookRow> docToBookRowProcessor() {
-        return d -> new BookRow(
-                Long.valueOf(d.getId()),
-                d.getTitle(),
-                d.getAuthorId() == null ? null : Long.valueOf(d.getAuthorId())
-        );
-    }
+    public ItemWriter<BookDoc> mongoBookWriterToJpa(JdbcTemplate jdbcTemplate, IdMappingService idMappingService) {
+        return items -> {
+            for (BookDoc doc : items) {
+                Long authorId = doc.getAuthorId() == null ? null
+                        : idMappingService.requirePostgresId(EntityType.AUTHOR, doc.getAuthorId());
 
-    @Bean
-    public JdbcBatchItemWriter<BookRow> bookRowWriter(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<BookRow>()
-                .dataSource(dataSource)
-                .sql("insert into book(id, title, author_id) values (:id, :title, :authorId)")
-                .beanMapped()
-                .build();
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(con -> {
+                    var ps = con.prepareStatement("insert into book(title, author_id) values (?, ?)",
+                            new String[]{"id"});
+                    ps.setString(1, doc.getTitle());
+                    if (authorId == null) {
+                        ps.setObject(2, null);
+                    } else {
+                        ps.setLong(2, authorId);
+                    }
+                    return ps;
+                }, keyHolder);
+
+                Number key = keyHolder.getKey();
+                if (key == null) {
+                    throw new IllegalStateException("Failed to insert book for mongoId=" + doc.getId());
+                }
+                idMappingService.save(EntityType.BOOK, key.longValue(), doc.getId());
+            }
+        };
     }
 
     @Bean
     public Step mongoToJpaBooksStep(JobRepository jobRepository,
                                     PlatformTransactionManager transactionManager,
                                     MongoPagingItemReader<BookDoc> mongoBookReader,
-                                    ItemProcessor<BookDoc, BookRow> docToBookRowProcessor,
-                                    JdbcBatchItemWriter<BookRow> bookRowWriter) {
+                                    ItemWriter<BookDoc> mongoBookWriterToJpa) {
         return new StepBuilder("mongoToJpaBooksStep", jobRepository)
-                .<BookDoc, BookRow>chunk(CHUNK_SIZE, transactionManager)
+                .<BookDoc, BookDoc>chunk(CHUNK_SIZE, transactionManager)
                 .reader(mongoBookReader)
-                .processor(docToBookRowProcessor)
-                .writer(bookRowWriter)
+                .writer(mongoBookWriterToJpa)
                 .build();
     }
 
 
     @Bean
-    public ItemWriter<BookDoc> bookGenresJoinWriter(JdbcTemplate jdbcTemplate) {
+    public ItemWriter<BookDoc> bookGenresJoinWriter(JdbcTemplate jdbcTemplate, IdMappingService idMappingService) {
         return items -> {
             for (BookDoc book : items) {
                 if (book.getGenreIds() == null || book.getGenreIds().isEmpty()) {
                     continue;
                 }
+                long bookPgId = idMappingService.requirePostgresId(EntityType.BOOK, book.getId());
                 List<Object[]> batch = book.getGenreIds().stream()
-                        .map(gid -> new Object[]{Long.valueOf(book.getId()), Long.valueOf(gid)})
+                        .map(gid -> new Object[]{bookPgId, idMappingService
+                                .requirePostgresId(EntityType.GENRE, gid)})
                         .toList();
                 jdbcTemplate.batchUpdate("insert into books_genres(book, genre) values (?, ?)", batch);
             }
@@ -445,34 +483,43 @@ public class BatchJobsConfig {
     }
 
     @Bean
-    public ItemProcessor<CommentDoc, CommentRow> docToCommentRowProcessor() {
-        return d -> new CommentRow(
-                Long.valueOf(d.getId()),
-                d.getText(),
-                d.getBookId() == null ? null : Long.valueOf(d.getBookId())
-        );
-    }
+    public ItemWriter<CommentDoc> mongoCommentWriterToJpa(JdbcTemplate jdbcTemplate, IdMappingService idMappingService) {
+        return items -> {
+            for (CommentDoc doc : items) {
+                Long bookId = doc.getBookId() == null ? null
+                        : idMappingService.requirePostgresId(EntityType.BOOK, doc.getBookId());
 
-    @Bean
-    public JdbcBatchItemWriter<CommentRow> commentRowWriter(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<CommentRow>()
-                .dataSource(dataSource)
-                .sql("insert into comment(id, text, book_id) values (:id, :text, :bookId)")
-                .beanMapped()
-                .build();
+                KeyHolder keyHolder = new GeneratedKeyHolder();
+                jdbcTemplate.update(con -> {
+                    var ps = con.prepareStatement("insert into comment(text, book_id) values (?, ?)",
+                            new String[]{"id"});
+                    ps.setString(1, doc.getText());
+                    if (bookId == null) {
+                        ps.setObject(2, null);
+                    } else {
+                        ps.setLong(2, bookId);
+                    }
+                    return ps;
+                }, keyHolder);
+
+                Number key = keyHolder.getKey();
+                if (key == null) {
+                    throw new IllegalStateException("Failed to insert comment for mongoId=" + doc.getId());
+                }
+                idMappingService.save(EntityType.COMMENT, key.longValue(), doc.getId());
+            }
+        };
     }
 
     @Bean
     public Step mongoToJpaCommentsStep(JobRepository jobRepository,
                                        PlatformTransactionManager transactionManager,
                                        MongoPagingItemReader<CommentDoc> mongoCommentReader,
-                                       ItemProcessor<CommentDoc, CommentRow> docToCommentRowProcessor,
-                                       JdbcBatchItemWriter<CommentRow> commentRowWriter) {
+                                       ItemWriter<CommentDoc> mongoCommentWriterToJpa) {
         return new StepBuilder("mongoToJpaCommentsStep", jobRepository)
-                .<CommentDoc, CommentRow>chunk(CHUNK_SIZE, transactionManager)
+                .<CommentDoc, CommentDoc>chunk(CHUNK_SIZE, transactionManager)
                 .reader(mongoCommentReader)
-                .processor(docToCommentRowProcessor)
-                .writer(commentRowWriter)
+                .writer(mongoCommentWriterToJpa)
                 .build();
     }
 }
