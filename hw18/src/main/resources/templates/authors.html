@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Авторы</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{_nav :: body}"></div>
+
+<main class="container">
+    <h1>Авторы</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>ФИО</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="a : ${authors}">
+            <td th:text="${a.id}"></td>
+            <td th:text="${a.fullName}"></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
