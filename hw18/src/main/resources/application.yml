@@ -1,0 +1,52 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: user
+    password: pswd
+  sql:
+    init:
+      mode: never
+
+  flyway:
+    enabled: true
+    locations: classpath:testdb/migration
+    baseline-on-migrate: true
+    clean-disabled: true
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    org.springframework.jdbc.core: info
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      db:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        slowCallRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+        recordExceptions:
+          - org.springframework.dao.DataAccessException
+          - java.sql.SQLException
+          - jakarta.persistence.PersistenceException
+  ratelimiter:
+    instances:
+      db:
+        limitForPeriod: 50
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
