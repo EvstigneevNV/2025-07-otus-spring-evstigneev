@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/app
+    driver-class-name: org.postgresql.Driver
+    username: app
+    password: app
+
+  flyway:
+    enabled: true
+    locations: classpath:testdb/migration
+    baseline-on-migrate: true
+    clean-disabled: true
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    org.springframework.jdbc.core: info
