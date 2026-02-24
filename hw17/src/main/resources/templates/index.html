@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Книги</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{_nav :: body}"></div>
+
+<main class="container">
+    <h1>Книги</h1>
+    <p class="msg" th:if="${msg}" th:text="${msg}"></p>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Жанры</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="b : ${books}">
+            <td th:text="${b.id}"></td>
+            <td th:text="${b.title}"></td>
+            <td th:text="${b.author.fullName}"></td>
+            <td>
+        <span th:each="g, it : ${b.genres}"
+              th:text="${g.name} + (${it.last}? '' : ', ')"></span>
+            </td>
+            <td><a class="btn" th:href="@{|/book/${b.id}|}">Открыть</a></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>
