@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${'Книга #' + book.id}">Книга</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="~{_nav :: body}"></div>
+
+<main class="container">
+    <h1 th:text="${book.title}">Книга</h1>
+    <section class="card">
+        <p><b>ID:</b> <span th:text="${book.id}"></span></p>
+        <p><b>Автор:</b> <span th:text="${book.author.fullName}"></span></p>
+        <p><b>Жанры:</b>
+            <span th:each="g, it : ${book.genres}" th:text="${g.name} + (${it.last}? '' : ', ')"></span>
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>Изменить книгу</h2>
+        <form th:action="@{|/book/${book.id}/update|}" method="post" class="form-grid">
+            <label>Название
+                <input name="title" th:value="${book.title}" required>
+            </label>
+
+            <label>Автор
+                <select name="authorId" required>
+                    <option th:each="a : ${authors}" th:value="${a.id}" th:text="${a.fullName}"
+                            th:selected="${a.id == book.author.id}"></option>
+                </select>
+            </label>
+
+            <label>Жанры
+                <select name="genreIds" multiple size="6" required>
+                    <option th:each="g : ${genres}" th:value="${g.id}" th:text="${g.name}"
+                            th:selected="${selectedGenreIds.contains(g.id)}"></option>
+                </select>
+            </label>
+
+            <div class="actions">
+                <button class="btn primary" type="submit">Сохранить</button>
+            </div>
+        </form>
+
+        <form th:action="@{|/book/${book.id}/delete|}" method="post">
+            <button class="btn danger" type="submit" onclick="return confirm('Удалить книгу?')">Удалить книгу</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Комментарии</h2>
+
+        <form class="row" th:action="@{|/book/${book.id}/comments|}" method="post">
+            <input name="text" placeholder="Новый комментарий" required>
+            <button class="btn" type="submit">Добавить</button>
+        </form>
+
+        <table class="table" th:if="${book.comments != null and !#lists.isEmpty(book.comments)}">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Текст</th>
+                <th colspan="2"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${book.comments}">
+                <td th:text="${c.id}"></td>
+                <td>
+                    <form class="row" th:action="@{|/book/${book.id}/comments/${c.id}/update|}" method="post">
+                        <input name="text" th:value="${c.text}" required>
+                        <button class="btn" type="submit">Изменить</button>
+                    </form>
+                </td>
+                <td class="w-min">
+                    <form th:action="@{|/book/${book.id}/comments/${c.id}/delete|}" method="post">
+                        <button class="btn danger" type="submit" onclick="return confirm('Удалить комментарий?')">
+                            Удалить
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
