@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://library-db:5432/library
+    username: library
+    password: library
+    driver-class-name: org.postgresql.Driver
+  rabbitmq:
+    host: rabbitmq
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-service:8081/api/auth/jwks
+
+clients:
+  auth:
+    base-url: http://auth-service:8081
